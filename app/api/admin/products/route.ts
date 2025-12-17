@@ -73,18 +73,22 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
     try {
         await connectToDatabase();
-        // Health check
-        await Product.findOne().select("_id").lean();
 
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
         if (!id) return NextResponse.json({ error: "Missing product ID" }, { status: 400 });
 
-        await Product.findByIdAndDelete(id);
+        const result = await Product.findByIdAndDelete(id);
+
+        if (!result) {
+            return NextResponse.json({ error: "Product not found or already deleted" }, { status: 404 });
+        }
+
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Delete Product Error (using fallback):", error);
 
+        // Fallback logic for Demo Mode (if DB connection fails)
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
         if (id) {
