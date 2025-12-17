@@ -32,69 +32,37 @@ export async function POST(request: Request) {
     let body;
     try { body = await request.json(); } catch (e) { }
 
-    try {
-        await connectToDatabase();
-        const newProduct = await Product.create(body);
-        return NextResponse.json(newProduct, { status: 201 });
-    } catch (error) {
-        console.error("Create Product Error (using fallback):", error);
-        if (!body.name || !body.price) {
-            return NextResponse.json({ error: "Name and Price required" }, { status: 400 });
-        }
-        const newProduct = memoryStore.addProduct({
-            ...body,
-            restaurantId: body.restaurantId || "1"
-        });
-        return NextResponse.json(newProduct, { status: 201 });
-    }
+    await connectToDatabase();
+    const newProduct = await Product.create(body);
+    return NextResponse.json(newProduct, { status: 201 });
 }
 
 export async function PUT(request: Request) {
     let body;
     try { body = await request.json(); } catch (e) { }
 
-    try {
-        await connectToDatabase();
-        const { _id, ...updates } = body;
-        if (!_id) return NextResponse.json({ error: "Missing product ID" }, { status: 400 });
+    await connectToDatabase();
+    const { _id, ...updates } = body;
+    if (!_id) return NextResponse.json({ error: "Missing product ID" }, { status: 400 });
 
-        const updatedProduct = await Product.findByIdAndUpdate(_id, updates, { new: true });
-        if (!updatedProduct) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    const updatedProduct = await Product.findByIdAndUpdate(_id, updates, { new: true });
+    if (!updatedProduct) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
-        return NextResponse.json(updatedProduct);
-    } catch (error) {
-        console.error("Update Product Error (using fallback):", error);
-        const updated = memoryStore.updateProduct(body._id, body);
-        if (updated) return NextResponse.json(updated);
-        return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
-    }
+    return NextResponse.json(updatedProduct);
 }
 
 export async function DELETE(request: Request) {
-    try {
-        await connectToDatabase();
+    await connectToDatabase();
 
-        const { searchParams } = new URL(request.url);
-        const id = searchParams.get('id');
-        if (!id) return NextResponse.json({ error: "Missing product ID" }, { status: 400 });
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ error: "Missing product ID" }, { status: 400 });
 
-        const result = await Product.findByIdAndDelete(id);
+    const result = await Product.findByIdAndDelete(id);
 
-        if (!result) {
-            return NextResponse.json({ error: "Product not found or already deleted" }, { status: 404 });
-        }
-
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error("Delete Product Error (using fallback):", error);
-
-        // Fallback logic for Demo Mode (if DB connection fails)
-        const { searchParams } = new URL(request.url);
-        const id = searchParams.get('id');
-        if (id) {
-            memoryStore.deleteProduct(id);
-            return NextResponse.json({ success: true });
-        }
-        return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
+    if (!result) {
+        return NextResponse.json({ error: "Product not found or already deleted" }, { status: 404 });
     }
+
+    return NextResponse.json({ success: true });
 }
