@@ -210,49 +210,34 @@ export function ProductForm({ isOpen, onClose, onSubmit, initialData, categories
                                     type="file"
                                     accept="image/*"
                                     className="hidden"
-                                    onChange={async (e) => {
+                                    onChange={(e) => {
                                         const file = e.target.files?.[0];
                                         if (!file) return;
 
-                                        const data = new FormData();
-                                        data.append('file', file);
-
-                                        try {
-                                            const res = await fetch('/api/upload', {
-                                                method: 'POST',
-                                                body: data
-                                            });
-                                            if (res.ok) {
-                                                const { url } = await res.json();
-                                                setFormData(prev => ({ ...prev, image: url }));
-                                            }
-                                        } catch (err) {
-                                            console.error("Upload failed", err);
-                                            alert("Failed to upload image");
+                                        // Limit to 1MB to protect MongoDB
+                                        if (file.size > 1024 * 1024) {
+                                            alert("Image size too large. Please choose an image under 1MB.");
+                                            return;
                                         }
+
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            const base64String = reader.result as string;
+                                            setFormData(prev => ({ ...prev, image: base64String }));
+                                        };
+                                        reader.readAsDataURL(file);
                                     }}
                                 />
                                 <Label
                                     htmlFor="image-upload"
-                                    className="flex-1 cursor-pointer h-11 flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-all text-sm font-medium text-gray-600"
+                                    className="flex-1 cursor-pointer h-16 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-all text-sm font-medium text-gray-600"
                                 >
-                                    <Upload className="h-4 w-4" />
-                                    {formData.image ? "Change Image" : "Upload Image"}
+                                    <Upload className="h-5 w-5" />
+                                    <span>{formData.image ? "Change Image" : "Click to Upload Image"}</span>
+                                    <span className="text-xs text-gray-400 font-normal">Max 1MB</span>
                                 </Label>
                             </div>
-
-                            {/* Manual URL Input (Fallback) */}
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">URL</span>
-                                <Input
-                                    id="image"
-                                    name="image"
-                                    value={formData.image}
-                                    onChange={handleChange}
-                                    placeholder="https://..."
-                                    className="h-9 pl-10 bg-white border-gray-200 text-xs"
-                                />
-                            </div>
+                            {/* URL Input removed as requested */}
                         </div>
                     </div>
 
