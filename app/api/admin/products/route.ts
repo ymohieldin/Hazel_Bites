@@ -21,23 +21,43 @@ export async function POST(request: Request) {
     let body;
     try { body = await request.json(); } catch (e) { }
 
-    await connectToDatabase();
-    const newProduct = await Product.create(body);
-    return NextResponse.json(newProduct, { status: 201 });
+    try {
+        await connectToDatabase();
+        if (!body.name || !body.price || !body.categoryId) {
+            return NextResponse.json({ error: "Name, Price, and Category are required" }, { status: 400 });
+        }
+
+        const newProduct = await Product.create(body);
+        return NextResponse.json(newProduct, { status: 201 });
+    } catch (error: any) {
+        console.error("Create Product Error:", error);
+        return NextResponse.json({
+            error: `Create Failed: ${error.message || error.toString()}`,
+            details: error
+        }, { status: 500 });
+    }
 }
 
 export async function PUT(request: Request) {
     let body;
     try { body = await request.json(); } catch (e) { }
 
-    await connectToDatabase();
-    const { _id, ...updates } = body;
-    if (!_id) return NextResponse.json({ error: "Missing product ID" }, { status: 400 });
+    try {
+        await connectToDatabase();
+        const { _id, ...updates } = body;
+        if (!_id) return NextResponse.json({ error: "Missing product ID" }, { status: 400 });
 
-    const updatedProduct = await Product.findByIdAndUpdate(_id, updates, { new: true });
-    if (!updatedProduct) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+        const updatedProduct = await Product.findByIdAndUpdate(_id, updates, { new: true });
+        if (!updatedProduct) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
-    return NextResponse.json(updatedProduct);
+        return NextResponse.json(updatedProduct);
+    } catch (error: any) {
+        console.error("Update Product Error:", error);
+        return NextResponse.json({
+            error: `Update Failed: ${error.message || error.toString()}`,
+            details: error
+        }, { status: 500 });
+    }
 }
 
 export async function DELETE(request: Request) {
